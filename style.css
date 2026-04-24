@@ -143,6 +143,28 @@ button {
   gap: 0.6rem;
 }
 
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+.sort-label {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.sort-select {
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 0.38rem 0.7rem;
+  font-size: 0.85rem;
+}
+
 .filter-btn {
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.95rem;
@@ -166,7 +188,7 @@ button {
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   padding-bottom: 2.6rem;
 }
@@ -190,6 +212,11 @@ button {
   aspect-ratio: 4 / 3;
   object-fit: cover;
   cursor: zoom-in;
+}
+
+.card-thumb-wrap {
+  display: block;
+  width: 100%;
 }
 
 .card-body {
@@ -291,6 +318,16 @@ button {
   color: var(--muted);
 }
 
+.footer {
+  padding: 0 0 2rem;
+}
+
+.footer p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
 @media (max-width: 1024px) {
   .gallery-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -305,6 +342,10 @@ button {
 
   .controls {
     align-items: flex-start;
+  }
+
+  .toolbar {
+    justify-content: flex-start;
   }
 
   .gallery-grid {

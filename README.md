@@ -17,8 +17,10 @@ A fast, static showcase site for RedNote / Xiaohongshu badges, achievement captu
 - Responsive gallery layout (desktop, tablet, mobile)
 - Lightbox preview for every image
 - Tag-based filtering
+- Sort options (newest first / oldest first)
 - Dark/light theme toggle
 - Language toggle: English, Traditional Chinese, Simplified Chinese
+- Footer with latest milestone update date
 
 ## How content is managed
 
@@ -83,3 +85,11 @@ GitHub Actions runs:
 
 - The project documentation intentionally avoids personal machine paths.
 - Build/test artifacts are excluded through `.gitignore`.
+
+## License
+
+Distributed under the terms of the repository [LICENSE](LICENSE).
+
+## Contact
+
+For collaboration or usage questions, open a GitHub Issue in this repository.

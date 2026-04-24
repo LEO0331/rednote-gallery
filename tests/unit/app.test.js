@@ -16,6 +16,49 @@ function buildDom() {
       </div>
     </header>
     <main class="container">
+      <section class="toolbar">
+        <label id="sort-label" for="sort-select">Sort</label>
+        <select id="sort-select">
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+        </select>
+      </section>
+      <section id="filter-controls" class="filters"></section>
+      <section id="gallery" class="gallery-grid"></section>
+    </main>
+    <footer><p id="last-updated"></p></footer>
+    <div id="lightbox" hidden>
+      <div class="lightbox-backdrop" data-close="true"></div>
+      <article>
+        <button id="lightbox-close" type="button">x</button>
+        <img id="lightbox-image" src="" alt="" />
+        <div>
+          <span id="lightbox-tag"></span>
+          <h2 id="lightbox-title"></h2>
+          <p id="lightbox-date"></p>
+          <p id="lightbox-description"></p>
+        </div>
+      </article>
+    </div>
+  `;
+}
+
+function buildDomWithoutOptionalControls() {
+  document.body.innerHTML = `
+    <header class="hero">
+      <div class="container hero-shell">
+        <div>
+          <p id="hero-kicker" class="hero-kicker"></p>
+          <h1 id="page-title"></h1>
+          <p id="page-subtitle"></p>
+        </div>
+        <div class="controls">
+          <div id="language-toggle" class="lang-switch"></div>
+          <button id="theme-toggle" class="theme-toggle" type="button"></button>
+        </div>
+      </div>
+    </header>
+    <main class="container">
       <section id="filter-controls" class="filters"></section>
       <section id="gallery" class="gallery-grid"></section>
     </main>
@@ -60,6 +103,19 @@ async function loadAppWithoutDom(languages) {
   return window.__rednoteGallery;
 }
 
+async function loadAppWithPrefs({ languages = ['en-US'], prefs = {} } = {}) {
+  vi.resetModules();
+  localStorage.clear();
+  delete window.__rednoteGallery;
+  Object.defineProperty(window.navigator, 'languages', {
+    configurable: true,
+    value: languages
+  });
+  Object.entries(prefs).forEach(([key, value]) => localStorage.setItem(key, value));
+  await import('../../app.js');
+  return window.__rednoteGallery;
+}
+
 beforeEach(() => {
   buildDom();
   window.matchMedia = vi.fn().mockReturnValue({ matches: false, addListener: vi.fn(), removeListener: vi.fn() });
@@ -85,6 +141,9 @@ describe('app.js unit coverage', () => {
 
     const appDefault = await loadAppWithLanguage(['fr-FR']);
     expect(appDefault.detectBrowserLanguage()).toBe('en');
+
+    const appNull = await loadAppWithLanguage([null]);
+    expect(appNull.detectBrowserLanguage()).toBe('en');
   });
 
   it('switches language and updates UI labels', async () => {
@@ -236,6 +295,37 @@ describe('app.js unit coverage', () => {
     expect(window.__rednoteGallery.detectBrowserLanguage()).toBe('zh-TW');
   });
 
+  it('supports sort change and updates card order', async () => {
+    await loadAppWithLanguage(['en-US']);
+    const sortSelect = document.querySelector('#sort-select');
+    sortSelect.value = 'oldest';
+    sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(localStorage.getItem('rednote_sort')).toBe('oldest');
+    const firstCardDate = document.querySelector('.card .date').textContent;
+    expect(firstCardDate).toBe('2026-04-24');
+  });
+
+  it('falls back to newest sort for invalid sort selection', async () => {
+    await loadAppWithLanguage(['en-US']);
+    const sortSelect = document.querySelector('#sort-select');
+    sortSelect.value = '';
+    sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(localStorage.getItem('rednote_sort')).toBe('newest');
+  });
+
+  it('renders localized sort labels and last-updated footer', async () => {
+    const app = await loadAppWithLanguage(['en-US']);
+    expect(document.querySelector('#sort-label').textContent).toBe('Sort');
+    expect(document.querySelector('#sort-select').textContent).toContain('Newest');
+    expect(document.querySelector('#last-updated').textContent).toContain('Last updated');
+
+    app.setLanguage('zh-TW');
+    expect(document.querySelector('#sort-label').textContent).toBe('排序');
+    expect(document.querySelector('#sort-select').textContent).toContain('最新優先');
+    expect(document.querySelector('#last-updated').textContent).toContain('最後更新');
+  });
+
   it('escapes html in rendered text fields', async () => {
     const app = await loadAppWithLanguage(['en-US']);
     app.badges.push({
@@ -291,11 +381,63 @@ describe('app.js unit coverage', () => {
     expect(document.querySelector('#lightbox').hidden).toBe(true);
   });
 
+  it('ignores card click when dataset id is missing', async () => {
+    await loadAppWithLanguage(['en-US']);
+    const card = document.querySelector('.card-thumb');
+    delete card.dataset.id;
+    card.click();
+    expect(document.querySelector('#lightbox').hidden).toBe(true);
+  });
+
   it('ignores card click when dataset id has no matching badge', async () => {
     await loadAppWithLanguage(['en-US']);
     const card = document.querySelector('.card-thumb');
     card.dataset.id = '99999';
     card.click();
     expect(document.querySelector('#lightbox').hidden).toBe(true);
+  });
+
+  it('loads saved language/theme/sort preferences when valid', async () => {
+    const app = await loadAppWithPrefs({
+      languages: ['fr-FR'],
+      prefs: {
+        rednote_lang: 'zh-CN',
+        rednote_theme: 'dark',
+        rednote_sort: 'oldest'
+      }
+    });
+    expect(app.getState().currentLanguage).toBe('zh-CN');
+    expect(app.getState().activeTheme).toBe('dark');
+    expect(document.querySelector('#sort-select').value).toBe('oldest');
+  });
+
+  it('falls back for invalid saved preferences', async () => {
+    const app = await loadAppWithPrefs({
+      languages: ['en-US'],
+      prefs: {
+        rednote_lang: 'xx',
+        rednote_theme: 'solarized',
+        rednote_sort: 'sideways'
+      }
+    });
+    expect(app.getState().currentLanguage).toBe('en');
+    expect(app.getState().activeTheme).toBe('light');
+    expect(document.querySelector('#sort-select').value).toBe('newest');
+  });
+
+  it('handles missing optional sort/footer controls', async () => {
+    buildDomWithoutOptionalControls();
+    const app = await loadAppWithLanguage(['en-US']);
+    expect(app.initializeApp()).toBe(true);
+    expect(document.querySelector('#page-title').textContent).toContain('RedNote');
+  });
+
+  it('renders empty footer when all badge dates are invalid', async () => {
+    const app = await loadAppWithLanguage(['en-US']);
+    app.badges.forEach((item) => {
+      item.date = '';
+    });
+    app.setLanguage('en');
+    expect(document.querySelector('#last-updated').textContent).toBe('');
   });
 });

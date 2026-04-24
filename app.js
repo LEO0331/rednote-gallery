@@ -190,6 +190,10 @@ const uiText = {
     heroKicker: "Curated Archive",
     themeLight: "Light",
     themeDark: "Dark",
+    sortLabel: "Sort",
+    sortNewest: "Newest",
+    sortOldest: "Oldest",
+    lastUpdatedPrefix: "Last updated",
     all: "All",
     empty: "No records found for this filter.",
     tags: {
@@ -206,6 +210,10 @@ const uiText = {
     heroKicker: "精選檔案",
     themeLight: "淺色",
     themeDark: "深色",
+    sortLabel: "排序",
+    sortNewest: "最新優先",
+    sortOldest: "最早優先",
+    lastUpdatedPrefix: "最後更新",
     all: "全部",
     empty: "此分類目前沒有紀錄。",
     tags: {
@@ -222,6 +230,10 @@ const uiText = {
     heroKicker: "精选档案",
     themeLight: "浅色",
     themeDark: "深色",
+    sortLabel: "排序",
+    sortNewest: "最新优先",
+    sortOldest: "最早优先",
+    lastUpdatedPrefix: "最后更新",
     all: "全部",
     empty: "该分类暂无记录。",
     tags: {
@@ -250,9 +262,11 @@ const imageDimensions = {
 
 const LANG_KEY = "rednote_lang";
 const THEME_KEY = "rednote_theme";
+const SORT_KEY = "rednote_sort";
 const DEFAULT_LANG = "en";
 const SUPPORTED_LANGS = ["en", "zh-TW", "zh-CN"];
 const SUPPORTED_THEMES = ["light", "dark"];
+const SUPPORTED_SORTS = ["newest", "oldest"];
 const IMAGE_PATH_PATTERN = /^badges\/[a-zA-Z0-9._-]+\.(jpg|jpeg|png|webp|gif)$/i;
 
 function detectBrowserLanguage() {
@@ -291,6 +305,8 @@ const savedTheme = localStorage.getItem(THEME_KEY);
 let activeTheme =
   (savedTheme && SUPPORTED_THEMES.includes(savedTheme) ? savedTheme : null) ||
   (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+const savedSort = localStorage.getItem(SORT_KEY);
+let activeSort = savedSort && SUPPORTED_SORTS.includes(savedSort) ? savedSort : "newest";
 
 const elements = {
   pageTitle: null,
@@ -306,7 +322,10 @@ const elements = {
   lightboxTitle: null,
   lightboxDate: null,
   lightboxDescription: null,
-  lightboxClose: null
+  lightboxClose: null,
+  sortLabel: null,
+  sortSelect: null,
+  lastUpdated: null
 };
 
 let isInitialized = false;
@@ -326,6 +345,9 @@ function cacheElements() {
   elements.lightboxDate = document.getElementById("lightbox-date");
   elements.lightboxDescription = document.getElementById("lightbox-description");
   elements.lightboxClose = document.getElementById("lightbox-close");
+  elements.sortLabel = document.getElementById("sort-label");
+  elements.sortSelect = document.getElementById("sort-select");
+  elements.lastUpdated = document.getElementById("last-updated");
 }
 
 function hasRequiredElements() {
@@ -377,8 +399,26 @@ function getSafeImagePath(path) {
   return IMAGE_PATH_PATTERN.test(candidate) ? candidate : "";
 }
 
+function getWebpPath(path) {
+  const safePath = getSafeImagePath(path);
+  return safePath ? safePath.replace(/\.(jpg|jpeg|png|gif)$/i, ".webp") : "";
+}
+
+function getDateTimestamp(dateValue) {
+  const parsed = Date.parse(dateValue);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function getLatestBadgeDate() {
+  const timestamps = badges.map((item) => getDateTimestamp(item.date)).filter(Boolean);
+  if (!timestamps.length) {
+    return "";
+  }
+  return new Date(Math.max(...timestamps)).toISOString().slice(0, 10);
+}
+
 function buildRenderableBadges() {
-  return badges
+  const items = badges
     .map((item, id) => {
       if (activeTag !== "All" && item.tag !== activeTag) {
         return null;
@@ -390,14 +430,20 @@ function buildRenderableBadges() {
       return {
         id,
         safeImagePath,
+        webpPath: getWebpPath(item.image),
         dims: imageDimensions[safeImagePath] || { width: 750, height: 750 },
         title: escapeHtml(getLocalizedValue(item, "title")),
         description: escapeHtml(getLocalizedValue(item, "description")),
         tagLabel: escapeHtml(getTagLabel(item.tag)),
-        date: escapeHtml(item.date)
+        date: escapeHtml(item.date),
+        timestamp: getDateTimestamp(item.date)
       };
     })
     .filter(Boolean);
+
+  const sortFactor = activeSort === "oldest" ? 1 : -1;
+  items.sort((left, right) => sortFactor * (left.timestamp - right.timestamp));
+  return items;
 }
 
 function applyTheme() {
@@ -441,6 +487,28 @@ function renderPageText() {
   applyTheme();
 }
 
+function renderSortControl() {
+  if (!elements.sortSelect || !elements.sortLabel) {
+    return;
+  }
+  elements.sortLabel.textContent = t().sortLabel;
+  elements.sortSelect.innerHTML = `
+    <option value="newest">${escapeHtml(t().sortNewest)}</option>
+    <option value="oldest">${escapeHtml(t().sortOldest)}</option>
+  `;
+  elements.sortSelect.value = activeSort;
+}
+
+function renderFooter() {
+  if (!elements.lastUpdated) {
+    return;
+  }
+  const latest = getLatestBadgeDate();
+  elements.lastUpdated.textContent = latest
+    ? `${t().lastUpdatedPrefix}: ${latest}`
+    : "";
+}
+
 function renderFilters() {
   const tags = ["All", ...new Set(badges.map((item) => item.tag))];
 
@@ -475,17 +543,20 @@ function renderGallery() {
         const priority = index === 0 ? "high" : "auto";
         return `
       <article class="card">
-        <img
-          class="card-thumb"
-          src="${item.safeImagePath}"
-          alt="${item.title}"
-          data-id="${item.id}"
-          width="${item.dims.width}"
-          height="${item.dims.height}"
-          loading="${eager}"
-          fetchpriority="${priority}"
-          decoding="async"
-        />
+        <picture class="card-thumb-wrap">
+          <source type="image/webp" srcset="${item.webpPath}" />
+          <img
+            class="card-thumb"
+            src="${item.safeImagePath}"
+            alt="${item.title}"
+            data-id="${item.id}"
+            width="${item.dims.width}"
+            height="${item.dims.height}"
+            loading="${eager}"
+            fetchpriority="${priority}"
+            decoding="async"
+          />
+        </picture>
         <div class="card-body">
           <span class="tag">${item.tagLabel}</span>
           <h2>${item.title}</h2>
@@ -533,9 +604,11 @@ function closeLightbox() {
 
 function rerenderAll() {
   renderPageText();
+  renderSortControl();
   renderLanguageSwitcher();
   renderFilters();
   renderGallery();
+  renderFooter();
 }
 
 function setLanguage(language) {
@@ -592,6 +665,15 @@ function initializeApp() {
   });
 
   elements.themeToggle.addEventListener("click", toggleTheme);
+  if (elements.sortSelect) {
+    elements.sortSelect.addEventListener("change", (event) => {
+      const value = String(event.target.value || "");
+      activeSort = SUPPORTED_SORTS.includes(value) ? value : "newest";
+      localStorage.setItem(SORT_KEY, activeSort);
+      renderGallery();
+      renderSortControl();
+    });
+  }
 
   rerenderAll();
   isInitialized = true;

@@ -12,6 +12,22 @@
       name="description"
       content="A simple static gallery of RedNote/Xiaohongshu badges, achievements, and milestones."
     />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="RedNote Milestone Gallery" />
+    <meta property="og:title" content="RedNote Milestone Gallery" />
+    <meta
+      property="og:description"
+      content="A simple record of RedNote badges, achievements, and growth milestones."
+    />
+    <meta property="og:url" content="https://leo0331.github.io/rednote-gallery/" />
+    <meta property="og:image" content="https://leo0331.github.io/rednote-gallery/badges/IMG_9364.JPG" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RedNote Milestone Gallery" />
+    <meta
+      name="twitter:description"
+      content="A simple record of RedNote badges, achievements, and growth milestones."
+    />
+    <meta name="twitter:image" content="https://leo0331.github.io/rednote-gallery/badges/IMG_9364.JPG" />
     <title>RedNote Milestone Gallery</title>
     <link rel="icon" href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="12" fill="%23ff5a89"/%3E%3Cpath d="M18 45V19h9.6c7.5 0 12 4.8 12 11.3S35.1 45 27.6 45H18Zm7-5.9h2.2c3.8 0 6.3-3 6.3-8s-2.5-8.2-6.3-8.2H25v16.2Z" fill="%23fff"/%3E%3C/svg%3E' />
     <link rel="stylesheet" href="style.css" />
@@ -34,9 +50,20 @@
     </header>
 
     <main class="container" aria-live="polite">
+      <section class="toolbar" aria-label="Gallery controls">
+        <label id="sort-label" class="sort-label" for="sort-select">Sort</label>
+        <select id="sort-select" class="sort-select" aria-labelledby="sort-label">
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+        </select>
+      </section>
       <section id="filter-controls" class="filters" aria-label="Filter gallery by category"></section>
       <section id="gallery" class="gallery-grid" aria-label="RedNote milestone cards"></section>
     </main>
+
+    <footer class="container footer">
+      <p id="last-updated"></p>
+    </footer>
 
     <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-labelledby="lightbox-title" hidden>
       <div class="lightbox-backdrop" data-close="true"></div>
