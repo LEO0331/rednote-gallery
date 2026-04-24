@@ -269,11 +269,6 @@ const SUPPORTED_THEMES = ["light", "dark"];
 const SUPPORTED_SORTS = ["newest", "oldest"];
 const IMAGE_PATH_PATTERN = /^badges\/[a-zA-Z0-9._-]+\.(jpg|jpeg|png|webp|gif)$/i;
 
-if (document.body) {
-  document.body.classList.add("js-enabled");
-  document.body.dataset.appReady = "false";
-}
-
 function detectBrowserLanguage() {
   const browserLangs = Array.isArray(navigator.languages)
     ? navigator.languages
