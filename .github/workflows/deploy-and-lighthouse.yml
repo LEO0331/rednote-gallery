@@ -60,6 +60,10 @@ jobs:
             "ci": {
               "collect": {
                 "staticDistDir": ".",
+                "url": [
+                  "http://localhost/index.html",
+                  "http://localhost/404.html"
+                ],
                 "numberOfRuns": 3,
                 "settings": {
                   "preset": "desktop"

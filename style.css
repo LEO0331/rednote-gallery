@@ -44,6 +44,11 @@ body {
   font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", "Noto Sans SC", "Helvetica Neue", sans-serif;
 }
 
+body.js-enabled[data-app-ready="false"] main.container,
+body.js-enabled[data-app-ready="false"] .footer {
+  visibility: hidden;
+}
+
 h1,
 h2,
 button {
