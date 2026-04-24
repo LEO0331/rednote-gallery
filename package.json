@@ -1,0 +1,31 @@
+{
+  "name": "rednote-gallery",
+  "version": "1.0.0",
+  "description": "A lightweight static portfolio-style gallery for displaying RedNote / Xiaohongshu badges, achievements, and milestone screenshots.",
+  "main": "app.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:all": "npm run test:coverage && npm run test:e2e"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LEO0331/rednote-gallery.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LEO0331/rednote-gallery/issues"
+  },
+  "homepage": "https://github.com/LEO0331/rednote-gallery#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@vitest/coverage-v8": "^4.1.5",
+    "jsdom": "^29.0.2",
+    "vitest": "^4.1.5"
+  }
+}

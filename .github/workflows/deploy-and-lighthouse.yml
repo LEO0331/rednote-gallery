@@ -1,0 +1,111 @@
+name: Deploy and Lighthouse CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Unit Coverage + E2E
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests with 85%+ coverage gate
+        run: npm run test:coverage
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+  lighthouse:
+    name: Lighthouse CI
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Lighthouse CI (temporary public report URL)
+        run: |
+          cat > lighthouserc.json <<'JSON'
+          {
+            "ci": {
+              "collect": {
+                "staticDistDir": ".",
+                "numberOfRuns": 3,
+                "settings": {
+                  "preset": "desktop"
+                }
+              },
+              "assert": {
+                "assertions": {
+                  "categories:performance": ["error", { "minScore": 0.9 }],
+                  "categories:accessibility": ["error", { "minScore": 0.9 }],
+                  "categories:best-practices": ["error", { "minScore": 0.9 }],
+                  "categories:seo": ["error", { "minScore": 0.9 }]
+                }
+              },
+              "upload": {
+                "target": "temporary-public-storage"
+              }
+            }
+          }
+          JSON
+
+          npx @lhci/cli@0.15.x autorun --config=lighthouserc.json
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: lighthouse
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

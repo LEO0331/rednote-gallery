@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Test artifacts
+playwright-report/
+test-results/
+coverage/
+output/playwright/
+
+# Local tools/runtime
+.omx/
+
+# Logs and temporary files
+*.log
+*.tmp
+.DS_Store
